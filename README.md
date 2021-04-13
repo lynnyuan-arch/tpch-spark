@@ -48,7 +48,7 @@ You can then run a query using:
 ```
 spark-submit --class "com.github.tpch.TpchQuery" --master MASTER target/scala-2.11/spark-tpc-h-queries_2.11-1.0.jar ##
 
-bin/spark-submit --class "com.github.tpch.TpchQuery" --jars plugin/znspark-1.0-SNAPSHOT.jar --master spark://master:7077/ tpch/tpch-spark-0.1-SNAPSHOT.jar
+bin/spark-submit --class "com.github.tpch.TpchQuery" --jars plugin/znspark-1.0-SNAPSHOT.jar --master spark://master:7077 tpch/tpch-spark-0.1-SNAPSHOT.jar
 ```
 
 where ## is the number of the query to run e.g 1, 2, ..., 22
