@@ -1,9 +1,7 @@
-package main.scala
+package com.github.tpch
 
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.functions.countDistinct
-import org.apache.spark.sql.functions.udf
+import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.functions.{countDistinct, udf}
 
 /**
  * TPC-H Query 16
@@ -12,12 +10,11 @@ import org.apache.spark.sql.functions.udf
  */
 class Q16 extends TpchQuery {
 
-  override def execute(sc: SparkContext, schemaProvider: TpchSchemaProvider): DataFrame = {
+  override def execute(sqlContext: SQLContext,  schemaProvider: TpchSchemaProvider): DataFrame = {
 
     // this is used to implicitly convert an RDD to a DataFrame.
-    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
-    import sqlContext.implicits._
     import schemaProvider._
+    import sqlContext.implicits._
 
     val decrease = udf { (x: Double, y: Double) => x * (1 - y) }
     val complains = udf { (x: String) => x.matches(".*Customer.*Complaints.*") }

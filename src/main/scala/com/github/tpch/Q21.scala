@@ -1,11 +1,7 @@
-package main.scala
+package com.github.tpch
 
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.functions.countDistinct
-import org.apache.spark.sql.functions.max
-import org.apache.spark.sql.functions.count
-import org.apache.spark.sql.functions.udf
+import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.functions.{count, countDistinct, max}
 
 /**
  * TPC-H Query 21
@@ -14,12 +10,11 @@ import org.apache.spark.sql.functions.udf
  */
 class Q21 extends TpchQuery {
 
-  override def execute(sc: SparkContext, schemaProvider: TpchSchemaProvider): DataFrame = {
+  override def execute(sqlContext: SQLContext, schemaProvider: TpchSchemaProvider): DataFrame = {
 
     // this is used to implicitly convert an RDD to a DataFrame.
-    val sqlContext = new org.apache.spark.sql.SQLContext(sc)
-    import sqlContext.implicits._
     import schemaProvider._
+    import sqlContext.implicits._
 
     val fsupplier = supplier.select($"s_suppkey", $"s_nationkey", $"s_name")
 

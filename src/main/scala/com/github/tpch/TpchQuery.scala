@@ -1,11 +1,8 @@
-package main.scala
+package com.github.tpch
 
-import org.apache.spark.SparkContext
-import org.apache.spark.SparkConf
-import java.io.BufferedWriter
-import java.io.File
-import java.io.FileWriter
 import org.apache.spark.sql._
+
+import java.io.{BufferedWriter, File, FileWriter}
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -28,7 +25,7 @@ abstract class TpchQuery {
   /**
    *  implemented in children classes and hold the actual query
    */
-  def execute(sc: SparkContext, tpchSchemaProvider: TpchSchemaProvider): DataFrame
+  def execute(sqlContext: SQLContext, tpchSchemaProvider: TpchSchemaProvider): DataFrame
 }
 
 object TpchQuery {
@@ -42,11 +39,10 @@ object TpchQuery {
       df.write.mode("overwrite").format("com.databricks.spark.csv").option("header", "true").save(outputDir + "/" + className)
   }
 
-  def executeQueries(sc: SparkContext, schemaProvider: TpchSchemaProvider, queryNum: Int): ListBuffer[(String, Float)] = {
-
+  def executeQueries(spark: SparkSession, schemaProvider: TpchSchemaProvider, queryNum: Int): ListBuffer[(String, Float)] = {
     // if set write results to hdfs, if null write to stdout
     // val OUTPUT_DIR: String = "/tpch"
-    val OUTPUT_DIR: String = "file://" + new File(".").getAbsolutePath() + "/dbgen/output"
+    val OUTPUT_DIR: String = "file:///" + new File(".").getAbsolutePath() + "/dbgen/output"
 
     val results = new ListBuffer[(String, Float)]
 
@@ -60,18 +56,19 @@ object TpchQuery {
     for (queryNo <- fromNum to toNum) {
       val t0 = System.nanoTime()
 
-      val query = Class.forName(f"main.scala.Q${queryNo}%02d").newInstance.asInstanceOf[TpchQuery]
+      val query = Class.forName(f"com.github.tpch.Q${queryNo}%02d").newInstance.asInstanceOf[TpchQuery]
 
-      outputDF(query.execute(sc, schemaProvider), OUTPUT_DIR, query.getName())
+
+      outputDF(query.execute(spark.sqlContext, schemaProvider), OUTPUT_DIR, query.getName())
 
       val t1 = System.nanoTime()
 
       val elapsed = (t1 - t0) / 1000000000.0f // second
-      results += new Tuple2(query.getName(), elapsed)
+      results += Tuple2(query.getName(), elapsed)
 
     }
 
-    return results
+    results
   }
 
   def main(args: Array[String]): Unit = {
@@ -80,21 +77,16 @@ object TpchQuery {
     if (args.length > 0)
       queryNum = args(0).toInt
 
-    val conf = new SparkConf().setAppName("Simple Application")
-    val sc = new SparkContext(conf)
+    val spark = SparkSession.builder()
+      .master("local[*]").appName("TPCH-Query")
+      .getOrCreate()
 
-    // read files from local FS
-    val INPUT_DIR = "file://" + new File(".").getAbsolutePath() + "/dbgen"
-
-    // read from hdfs
-    // val INPUT_DIR: String = "/dbgen"
-
-    val schemaProvider = new TpchSchemaProvider(sc, INPUT_DIR)
+    val schemaProvider = new TpchSchemaProvider(spark, "znbase")
 
     val output = new ListBuffer[(String, Float)]
-    output ++= executeQueries(sc, schemaProvider, queryNum)
+    output ++= executeQueries(spark, schemaProvider, queryNum)
 
-    val outFile = new File("TIMES.txt")
+    val outFile = new File("TIMES_Local[*].txt")
     val bw = new BufferedWriter(new FileWriter(outFile, true))
 
     output.foreach {
