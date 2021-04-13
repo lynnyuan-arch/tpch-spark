@@ -8,7 +8,7 @@ class TpchSchemaProvider(spark: SparkSession, format: String) {
   val sslmode = "disable"
   val username = "root"
   val password = ""
-  val database = "tpch1g"
+  val database = "tpch"
 
   val dfReader = spark.read.format(format)
     .option("znbase.addr", addr)
@@ -17,6 +17,7 @@ class TpchSchemaProvider(spark: SparkSession, format: String) {
     .option("znbase.username", username)
     .option("znbase.password", password)
     .option("database", database)
+
   val dataFramesMap = Map (
     "customer" -> dfReader
       .option("table", "customer")
