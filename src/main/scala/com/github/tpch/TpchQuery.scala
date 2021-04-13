@@ -86,7 +86,7 @@ object TpchQuery {
     val output = new ListBuffer[(String, Float)]
     output ++= executeQueries(spark, schemaProvider, queryNum)
 
-    val outFile = new File("TIMES_Local[*].txt")
+    val outFile = new File("TIMES.txt")
     val bw = new BufferedWriter(new FileWriter(outFile, true))
 
     output.foreach {
