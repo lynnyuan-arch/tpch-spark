@@ -78,7 +78,8 @@ object TpchQuery {
       queryNum = args(0).toInt
 
     val spark = SparkSession.builder()
-      .master("local[*]").appName("TPCH-Query")
+//      .master("local[*]")
+      .appName("TPCH-Query")
       .getOrCreate()
 
     val schemaProvider = new TpchSchemaProvider(spark, "znbase")
