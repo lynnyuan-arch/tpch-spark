@@ -17,6 +17,7 @@ class TpchSchemaProvider(spark: SparkSession, format: String) {
     .option("znbase.username", username)
     .option("znbase.password", password)
     .option("database", database)
+//    .option("fetchsize", 10000)
 
   val dataFramesMap = Map (
     "customer" -> dfReader

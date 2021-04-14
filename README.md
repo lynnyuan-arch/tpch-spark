@@ -53,6 +53,16 @@ bin/spark-submit --class "com.github.tpch.TpchQuery" --conf spark.executor.memor
 
 bin/spark-submit --class "com.github.tpch.TpchQuery" --conf spark.executor.memory=32G --conf spark.driver.memory=4G --conf spark.sql.shuffle.partitions=20 --master spark://node24:7077 --jars plugin/znspark-1.0-SNAPSHOT.jar tpch/tpch-spark-0.1-SNAPSHOT.jar
 
+bin/spark-submit --class "com.github.tpch.TpchQuery" \
+--conf spark.submit.deployMode=cluster \
+--conf spark.network.timeout=10000000 \
+--conf spark.executor.heartbeatInterval=10000000 \
+--conf spark.executor.memory=256G \
+--conf spark.driver.memory=128G \
+--master spark://node24:7077 \
+--jars plugin/znspark-1.0-SNAPSHOT.jar \
+tpch/tpch-spark-0.1-SNAPSHOT.jar
+
 ```
 
 where ## is the number of the query to run e.g 1, 2, ..., 22
