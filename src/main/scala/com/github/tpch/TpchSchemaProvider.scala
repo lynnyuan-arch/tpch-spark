@@ -2,22 +2,9 @@ package com.github.tpch
 
 import org.apache.spark.sql.SparkSession
 
-class TpchSchemaProvider(spark: SparkSession, format: String) {
-  val addr = "10.110.10.145"
-  val port = "26355"
-  val sslmode = "disable"
-  val username = "root"
-  val password = ""
-  val database = "tpch"
+class TpchSchemaProvider(spark: SparkSession, format: String, options: Map[String, String]) {
+  val dfReader = spark.read.format(format).options(options)
 
-  val dfReader = spark.read.format(format)
-    .option("znbase.addr", addr)
-    .option("znbase.port", port)
-    .option("znbase.sslmode", sslmode)
-    .option("znbase.username", username)
-    .option("znbase.password", password)
-    .option("database", database)
-//    .option("fetchsize", 10000)
 
   val dataFramesMap = Map (
     "customer" -> dfReader

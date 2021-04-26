@@ -71,6 +71,19 @@ object TpchQuery {
     results
   }
 
+  def initZnSparkEnv():(String, Map[String, String]) = {
+    val addr = "localhost"
+    val port = "26257"
+    val database = "tpch"
+
+    val format = "com.inspur.znspark"
+    val options = Map[String, String]("host" -> addr,
+    "port" -> port,
+    "database" -> database,
+    "znspark.vectorized.read.enable" -> "false")
+    (format, options)
+  }
+
   def main(args: Array[String]): Unit = {
 
     var queryNum = 0;
@@ -78,11 +91,13 @@ object TpchQuery {
       queryNum = args(0).toInt
 
     val spark = SparkSession.builder()
-//      .master("local[*]")
+      .master("local[*]")
       .appName("TPCH-Query-"+(if (queryNum == 0) "All" else  args(0)))
       .getOrCreate()
 
-    val schemaProvider = new TpchSchemaProvider(spark, "znbase")
+    val tuple = initZnSparkEnv
+
+    val schemaProvider = new TpchSchemaProvider(spark, tuple._1, tuple._2)
 
     val output = new ListBuffer[(String, Float)]
     output ++= executeQueries(spark, schemaProvider, queryNum)
