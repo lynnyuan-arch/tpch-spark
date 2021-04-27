@@ -71,7 +71,7 @@ object TpchQuery {
     results
   }
 
-  def initZnSparkEnv():(String, Map[String, String]) = {
+  def znsparkSchemaProvider(spark: SparkSession): TpchSchemaProvider = {
     val addr = "localhost"
     val port = "26257"
     val database = "tpch"
@@ -81,7 +81,32 @@ object TpchQuery {
     "port" -> port,
     "database" -> database,
     "znspark.vectorized.read.enable" -> "false")
-    (format, options)
+
+    new TpchDBSchemaProvider(spark, format, options)
+  }
+
+  def jdbcSchemaProvider(spark: SparkSession): TpchSchemaProvider = {
+    val addr = "localhost"
+    val port = "26257"
+    val database = "tpch"
+
+    val format = "com.inspur.znspark"
+    val options = Map[String, String]("host" -> addr,
+      "port" -> port,
+      "database" -> database,
+      "znspark.vectorized.read.enable" -> "false")
+
+    new TpchDBSchemaProvider(spark, format, options)
+  }
+
+  def parquetSchemaProvider(spark: SparkSession): TpchSchemaProvider = {
+    val path = "/data/tmp/spark-warehouse/tpch"
+
+    val format = "parquet"
+    val options = Map[String, String](
+      "spark.sql.parquet.enableVectorizedReader" -> "false")
+
+    new TpchParquetSchemaProvider(spark, path, format, options)
   }
 
   def main(args: Array[String]): Unit = {
@@ -95,9 +120,7 @@ object TpchQuery {
       .appName("TPCH-Query-"+(if (queryNum == 0) "All" else  args(0)))
       .getOrCreate()
 
-    val tuple = initZnSparkEnv
-
-    val schemaProvider = new TpchSchemaProvider(spark, tuple._1, tuple._2)
+    val schemaProvider = parquetSchemaProvider(spark)
 
     val output = new ListBuffer[(String, Float)]
     output ++= executeQueries(spark, schemaProvider, queryNum)
