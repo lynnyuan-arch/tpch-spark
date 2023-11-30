@@ -13,6 +13,7 @@ class Q21 extends TpchQuery {
   override def execute(sqlContext: SQLContext, schemaProvider: TpchSchemaProvider): DataFrame = {
 
     // this is used to implicitly convert an RDD to a DataFrame.
+/*
     import schemaProvider._
     import sqlContext.implicits._
 
@@ -32,7 +33,7 @@ class Q21 extends TpchQuery {
       .agg(countDistinct($"l_suppkey").as("suppkey_count"), max($"l_suppkey").as("suppkey_max"))
       .select($"l_orderkey".as("key"), $"suppkey_count", $"suppkey_max")
 
-    val forder = order.select($"o_orderkey", $"o_orderstatus")
+    val forder = orders.select($"o_orderkey", $"o_orderstatus")
       .filter($"o_orderstatus" === "F")
 
     nation.filter($"n_name" === "SAUDI ARABIA")
@@ -49,6 +50,13 @@ class Q21 extends TpchQuery {
       .agg(count($"l_suppkey").as("numwait"))
       .sort($"numwait".desc, $"s_name")
       .limit(100)
+    */
+
+
+    val sql = "select\n\ts_name,\n\tcount(*) as numwait\nfrom\n\tsupplier,\n\tlineitem l1,\n\torders,\n\tnation\nwhere\n\ts_suppkey = l1.l_suppkey\n\tand o_orderkey = l1.l_orderkey\n\tand o_orderstatus = 'F'\n\tand l1.l_receiptdate > l1.l_commitdate\n\tand exists (\n\t\tselect\n\t\t\t*\n\t\tfrom\n\t\t\tlineitem l2\n\t\twhere\n\t\t\tl2.l_orderkey = l1.l_orderkey\n\t\t\tand l2.l_suppkey <> l1.l_suppkey\n\t)\n\tand not exists (\n\t\tselect\n\t\t\t*\n\t\tfrom\n\t\t\tlineitem l3\n\t\twhere\n\t\t\tl3.l_orderkey = l1.l_orderkey\n\t\t\tand l3.l_suppkey <> l1.l_suppkey\n\t\t\tand l3.l_receiptdate > l3.l_commitdate\n\t)\n\tand s_nationkey = n_nationkey\n\tand n_name = 'UNITED STATES'\ngroup by\n\ts_name\norder by\n\tnumwait desc,\n\ts_name\nLIMIT 100"
+
+    println(s"Q21:\n $sql")
+    sqlContext.sql(sql)
   }
 
 }
