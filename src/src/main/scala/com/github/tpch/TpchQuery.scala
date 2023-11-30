@@ -49,6 +49,8 @@ object TpchQuery {
     val OUTPUT_DIR: String = "file:///" + new File(".").getAbsolutePath() + "/dbgen/output"
 //    val OUTPUT_DIR: String = ""
 
+//    val OUTPUT_DIR: String = "hdfs://node9.cloud.com:9000/spark/tpch/output_100g"
+
     val results = new ListBuffer[(String, Float)]
 
     var fromNum = 1;
@@ -69,30 +71,11 @@ object TpchQuery {
       val t1 = System.nanoTime()
 
       val elapsed = (t1 - t0) / 1000000000.0f // second
+      println(s"cost ${query.getName()} -> $elapsed")
       results += Tuple2(query.getName(), elapsed)
-
     }
 
     results
-  }
-
-  def initZbSparkEnv():(String, Map[String, String]) = {
-    val addr = "localhost"  //10.202.112.105
-    val port = "26257"
-    val database = "defaultdb"
-
-    val format = "com.inspur.znbase"
-    val options = Map[String, String]("znbase.addr" -> addr,
-      "znbase.port" -> port,
-      "database" -> database,
-      "znbase.user" -> "root",
-      "znbase.password" -> "ZNbase@2020",
-      "znbase.sslrootcert" -> "/data/znbase-certs/certs/ca.crt",
-      "znbase.sslcert" -> "/data/znbase-certs/certs/client.inspur.crt",
-      "znbase.sslkey" -> "/data/znbase-certs/certs/client.inspur.pkcs8.key",
-      "znbase.ssl" -> "false"
-    )
-    (format, options)
   }
 
   def analyzeTable(spark: SparkSession, tableName: String): Unit = {
@@ -176,34 +159,45 @@ object TpchQuery {
     })
   }
 
+  // tpch_1g 0 false
   def main(args: Array[String]): Unit = {
-
     var queryNum = 0
+    var database = "tpch_1g"
+    var analyze = true
     if (args.length > 0)
-      queryNum = args(0).toInt
+      database = args(0)
+    if (args.length > 1)
+      queryNum = args(1).toInt // 0 --> all
+
+    if (args.length > 2) {
+      analyze = args(2).toBoolean
+    }
 
     val spark = SparkSession.builder()
+      //       向量读必须使用V2方式注册数据源
+      //      .config("spark.znbase.vectorized.read.enable", true)
+      //      .config("spark.znbase.vectorized.read.batch.size", 1000000)
+
       .master("local[*]")
       .config("spark.sql.extensions", "org.apache.spark.sql.ZnExtensions")
       .config("spark.sql.znbase.pushDownPredicate", true)
       .config("spark.sql.znbase.pushDownSort", true)
-      .config("spark.znbase.reader.batch", 200000)
-      // 向量读必须使用V2方式注册数据源
-//      .config("spark.znbase.vectorized.read.enable", true)
-//      .config("spark.znbase.vectorized.read.batch.size", 1000000)
-
-//      .config("spark.driver.memory", "2G")
-//      .config("spark.executor.memory", "4G")
+      .config("spark.sql.znbase.pushDownAggregation", true)
+      .config("spark.znbase.partition.filter", true)
+      .config("spark.znbase.reader.batch", 100000)
+      .config("spark.znbase.row.reader", "unsafe")
+      .config("spark.znbase.follower.read.enable", true)
+      .config("spark.znbase.read.replica.type", "column")
+      .config("spark.driver.memory", "4G")
+      .config("spark.executor.memory", "4G")
       .config("spark.sql.catalogImplementation", "in-memory") //hive, in-memory
       .config("spark.memory.offHeap.enabled", "true")
-      .config("spark.memory.offHeap.size", "2G")
+      .config("spark.memory.offHeap.size", "4G")
       .config("spark.sql.adaptive.enabled", true)           // 自适应
       .config("spark.sql.adaptive.skewJoin.enabled", true)
-
       .config("spark.sql.statistics.histogram.enabled", true)
       .config("spark.sql.cbo.enabled", true)
 //      .config("spark.sql.cbo.planStats.enabled", true)  // logical plan will fetch row counts and column statistics
-
 //      .config("spark.sql.cbo.joinReorder.enabled", true)    // Enables join reorder in CBO
 //      .config("spark.sql.cbo.joinReorder.dp.threshold", 12)   // SQLConf 节点数
 //      .config("spark.sql.cbo.joinReorder.card.weight", 0.7)   //
@@ -211,21 +205,28 @@ object TpchQuery {
 //      .config("spark.sql.autoBroadcastJoinThreshold", "10MB")
 //      .config("spark.sql.codegen.wholeStage", false)
 
-      .appName("TPCH-Query-"+(if (queryNum == 0) "All" else  args(0)))
+      // 计划输出
+//      .config("spark.sql.optimizer.planChangeLog.level", "debug")
+//      .config("spark.sql.optimizer.planChangeLog.batches", "Aggregate")
+
+      .config("spark.sql.broadcastTimeout", 600)
+      .appName("TPCH-Query-"+(if (queryNum == 0) "All" else  args(1)))
       .getOrCreate()
 
-    val tuple = initZbSparkEnv
+    val tuple = initZbSparkEnv(database)
 
     val schemaProvider = new TpchSchemaProvider(spark, tuple._1, tuple._2)
 
     // 分析数据表，生成直方图
-    analyzeTables(spark)
-//    setTableMeta(spark)
-    analyzeTableColumns(spark)
+    val cbo = spark.sparkContext.getConf.getBoolean("spark.sql.cbo.enabled", false)
+    val histogram = spark.sparkContext.getConf.getBoolean("spark.sql.statistics.histogram.enabled", false)
+    if (analyze && cbo) analyzeTables(spark)
+    if (analyze && histogram) analyzeTableColumns(spark)
+    //    setTableMeta(spark)
 
     val output = new ListBuffer[(String, Float)]
     output ++= executeQueries(spark, schemaProvider, queryNum)
-
+    /*
     val outFile = new File("TIMES.txt")
     val bw = new BufferedWriter(new FileWriter(outFile, true))
 
@@ -235,7 +236,30 @@ object TpchQuery {
 
     bw.close()
 
-    TimeUnit.SECONDS.sleep(12000)
+*/
+    output.foreach {
+      case (key, value) => print(f"${key}%s\t${value}%1.8f\n")
+    }
+
+    TimeUnit.SECONDS.sleep(30)
     spark.close()
+  }
+
+  def initZbSparkEnv(database: String):(String, Map[String, String]) = {
+    val addr = "node2.cloud.com"  //10.202.112.105 localhost
+    val port = "9001"
+
+    val format = "com.inspur.znbase"
+    val options = Map[String, String]("znbase.addr" -> addr,
+      "znbase.port" -> port,
+      "database" -> database,
+      "znbase.user" -> "root",
+      "znbase.password" -> "ZNbase@2020",
+      "znbase.sslrootcert" -> "/data/znbase-certs/certs/ca.crt",
+      "znbase.sslcert" -> "/data/znbase-certs/certs/client.inspur.crt",
+      "znbase.sslkey" -> "/data/znbase-certs/certs/client.inspur.pkcs8.key",
+      "znbase.ssl" -> "false"
+    )
+    (format, options)
   }
 }

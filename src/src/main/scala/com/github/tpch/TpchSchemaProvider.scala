@@ -57,12 +57,12 @@ class TpchSchemaProviderV2(spark: SparkSession, format: String, options: Map[Str
 class TpchSchemaProvider(spark: SparkSession, format: String, options: Map[String, String]) {
   val tables = Seq("customer", "lineitem", "nation", "orders", "part", "partsupp", "region", "supplier")
   tables.foreach(name => {
-    val createTbl = s"CREATE TABLE $name  \n" +
+    val createTbl = s"CREATE TABLE IF NOT EXISTS $name  \n" +
       s"USING znbase \n" +
       s"OPTIONS (\n" +
-      s"  znbase.addr 'localhost', \n" +
-      s"  znbase.port '26257', \n" +
-      s"  database 'tpch', \n" +
+      s"  znbase.addr '${options.getOrElse("znbase.addr", "localhost")}', \n" +
+      s"  znbase.port '${options.getOrElse("znbase.port", "26257")}', \n" +
+      s"  database '${options.getOrElse("database", "defaultdb")}', \n" +
       s"  table '$name'\n" +
       ")"
 

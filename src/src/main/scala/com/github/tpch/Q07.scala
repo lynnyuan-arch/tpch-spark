@@ -40,7 +40,7 @@ class Q07 extends TpchQuery {
 //      .groupBy($"supp_nation", $"cust_nation", $"l_year")
 //      .agg(sum($"volume").as("revenue"))
 //      .sort($"supp_nation", $"cust_nation", $"l_year")
-/*
+
     val sql  =
 """select supp_nation, cust_nation, l_year, sum(volume) as revenue
   |from (
@@ -56,14 +56,12 @@ class Q07 extends TpchQuery {
   |         and c_nationkey = n2.n_nationkey
   |         and ((n1.n_name = 'BRAZIL' and n2.n_name = 'FRANCE') or (n1.n_name = 'FRANCE' and n2.n_name = 'BRAZIL'))
   |         and l_shipdate between date '1995-01-01' and date '1996-12-31'
-  |) as shipping
-  |group by supp_nation, cust_nation, l_year
-  |order by supp_nation, cust_nation, l_year
-  |limit 4""".stripMargin*/
+  |   ) as shipping
+  |   group by supp_nation, cust_nation, l_year
+  |   order by supp_nation, cust_nation, l_year
+  |   limit 4""".stripMargin
 
-    val sql = "select\n\tsupp_nation,\n\tcust_nation,\n\tl_year,\n\tsum(volume) as revenue\nfrom\n\t(\n\t\tselect\n\t\t\tn1.n_name as supp_nation,\n\t\t\tn2.n_name as cust_nation,\n\t\t\tyear(l_shipdate) as l_year,\n\t\t\tl_extendedprice * (1 - l_discount) as volume\n\t\tfrom\n\t\t\tsupplier,\n\t\t\tlineitem,\n\t\t\torders,\n\t\t\tcustomer,\n\t\t\tnation n1,\n\t\t\tnation n2\n\t\twhere\n\t\t\ts_suppkey = l_suppkey\n\t\t\tand o_orderkey = l_orderkey\n\t\t\tand c_custkey = o_custkey\n\t\t\tand s_nationkey = n1.n_nationkey\n\t\t\tand c_nationkey = n2.n_nationkey\n\t\t\tand (\n\t\t\t\t(n1.n_name = 'FRANCE' and n2.n_name = 'GERMANY')\n\t\t\t\tor (n1.n_name = 'GERMANY' and n2.n_name = 'FRANCE')\n\t\t\t)\n\t\t\tand l_shipdate between date '1995-01-01' and date '1996-12-31'\n\t) as shipping\ngroup by\n\tsupp_nation,\n\tcust_nation,\n\tl_year\norder by\n\tsupp_nation,\n\tcust_nation,\n\tl_year\nLIMIT 1"
-
-    println(s"Q07:\n$sql")
+    println(s"Q07:\n $sql")
     sqlContext.sql(sql)
   }
 

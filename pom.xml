@@ -6,19 +6,20 @@
 
     <!-- Through this connector spark sql can connect to cockroach db to read or write data.-->
     <groupId>com.github.lynnyuan-arch</groupId>
-    <artifactId>tpch-spark</artifactId>
+    <artifactId>tpch-zbspark</artifactId>
     <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spark.version>3.0.2</spark.version>
+        <spark.version>2.3.4</spark.version>
         <java.version>1.8</java.version>
-        <scala.version>2.12.13</scala.version>
-        <scala.binary.version>2.12</scala.binary.version>
+        <scala.version>2.11.12</scala.version>
+        <scala.binary.version>2.11</scala.binary.version>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
+        <zbspark.version>2.1</zbspark.version>
     </properties>
 
     <!-- Deploy Repository -->
@@ -70,17 +71,13 @@
         </dependency>
         -->
         <dependency>
-            <groupId>com.inspur.bini</groupId>
-            <artifactId>znspark-core</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <groupId>com.inspur.znbase</groupId>
+            <artifactId>znbase-core</artifactId>
+            <version>${zbspark.version></version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.hadoop</groupId>
                     <artifactId>hadoop-client</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>mysql</groupId>
-                    <artifactId>mysql-connector-java</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -207,66 +204,65 @@
     </build>
 
     <profiles>
-    <profile>
-        <id>add-dependencies-for-IDEA</id>
+        <profile>
+            <id>add-dependencies-for-IDEA</id>
+            <activation>
+                <property>
+                    <name>idea.version</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.spark</groupId>
+                    <artifactId>spark-sql_${scala.binary.version}</artifactId>
+                    <version>${spark.version}</version>
+                    <scope>compile</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>com.google.protobuf</groupId>
+                            <artifactId>protobuf-java</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>com.google.guava</groupId>
+                            <artifactId>guava</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
 
-        <activation>
-            <property>
-                <name>idea.version</name>
-            </property>
-        </activation>
+                <dependency>
+                    <groupId>org.scala-lang</groupId>
+                    <artifactId>scala-library</artifactId>
+                    <version>${scala.version}</version>
+                    <scope>compile</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                    <version>29.0-android</version>
+                </dependency>
+                <dependency>
+                    <groupId>com.inspur.znbase</groupId>
+                    <artifactId>znbase-core</artifactId>
+                    <version>${zbspark.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.apache.hadoop</groupId>
+                            <artifactId>hadoop-client</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>mysql</groupId>
+                            <artifactId>mysql-connector-java</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
 
-        <dependencies>
-            <dependency>
-                <groupId>org.apache.spark</groupId>
-                <artifactId>spark-sql_${scala.binary.version}</artifactId>
-                <version>${spark.version}</version>
-                <scope>compile</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.google.protobuf</groupId>
-                        <artifactId>protobuf-java</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.scala-lang</groupId>
-                <artifactId>scala-library</artifactId>
-                <version>${scala.version}</version>
-                <scope>compile</scope>
-            </dependency>
-
-<!--            <dependency>
-                <groupId>com.inspur.znbase</groupId>
-                <artifactId>znspark</artifactId>
-                <version>1.0-SNAPSHOT</version>
-                <scope>compile</scope>
-            </dependency>-->
-
-            <dependency>
-                <groupId>com.inspur.bini</groupId>
-                <artifactId>znspark-core</artifactId>
-                <version>1.0-SNAPSHOT</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-client</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>mysql</groupId>
-                        <artifactId>mysql-connector-java</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.scalatest</groupId>
-                <artifactId>scalatest_${scala.binary.version}</artifactId>
-                <version>3.2.7</version>
-                <scope>test</scope>
-            </dependency>
-        </dependencies>
+                <dependency>
+                    <groupId>org.scalatest</groupId>
+                    <artifactId>scalatest_${scala.binary.version}</artifactId>
+                    <version>3.2.7</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 
